@@ -78,11 +78,11 @@ const Collection = function(fqn,config,provider,serializer,DocumentFactory) {
 
     Utils.setMetaData(documents,metadata);
 
-    if(metadata.hasMore){
+    if(metadata.hasMore && limit > documents.length){
       documents.hasMore = metadata.hasMore;
       documents.next    = () => {
         const metadata = Utils.getMetaData(documents);
-        return collectionProvider.findDocuments(fqn, limit, metadata.startsWith, metadata.continuationToken).then( listResponse )
+        return collectionProvider.findDocuments(fqn, limit - documents.length, metadata.startsWith, metadata.continuationToken).then( listResponse )
       }
     }
 
@@ -161,7 +161,7 @@ const Collection = function(fqn,config,provider,serializer,DocumentFactory) {
             return documentFactory.build(data,idPropertyName,collection);
           })
       }),
-    find: (startsWith, limit) => collectionProvider.findDocuments(fqn, limit, startsWith)
+    find: (startsWith,limit,continuationToken) => collectionProvider.findDocuments(fqn, limit, startsWith,continuationToken)
       .then( listResponse )
       .catch( handleError ),
     exists: id => collectionProvider.getDocumentHead(fqn,id)
