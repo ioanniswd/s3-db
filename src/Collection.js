@@ -60,7 +60,7 @@ const Collection = function(fqn,config,provider,serializer,DocumentFactory) {
    *  to easily lod specific documents as well as helper methods
    *  for pagination through the results.
    */
-  const listResponse = results => {
+  const listResponse = (results, limit) => {
 
 
     const documents = results.Contents
@@ -82,7 +82,7 @@ const Collection = function(fqn,config,provider,serializer,DocumentFactory) {
       documents.hasMore = metadata.hasMore;
       documents.next    = () => {
         const metadata = Utils.getMetaData(documents);
-        return collectionProvider.findDocuments(fqn, metadata.startsWith, metadata.continuationToken).then( listResponse )
+        return collectionProvider.findDocuments(fqn, limit, metadata.startsWith, metadata.continuationToken).then( listResponse )
       }
     }
 
@@ -129,7 +129,7 @@ const Collection = function(fqn,config,provider,serializer,DocumentFactory) {
           if(hasChanged){
             return Promise.reject('Collision, the document has been modified.');
           }
-          
+
           return document;
         })
     }
@@ -161,7 +161,7 @@ const Collection = function(fqn,config,provider,serializer,DocumentFactory) {
             return documentFactory.build(data,idPropertyName,collection);
           })
       }),
-    find: startsWith => collectionProvider.findDocuments(fqn,startsWith)
+    find: (startsWith, limit) => collectionProvider.findDocuments(fqn, limit, startsWith)
       .then( listResponse )
       .catch( handleError ),
     exists: id => collectionProvider.getDocumentHead(fqn,id)

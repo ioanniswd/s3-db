@@ -113,18 +113,20 @@ module.exports = function(config){
       /**
        *
        */
-      findDocuments: (fqn,startsWith,continuationToken) => {
+      findDocuments: (fqn,limit,startsWith,continuationToken) => {
         const params = {
           Bucket : bucketName(fqn),
           FetchOwner: false,
-          MaxKeys: getCollectionConfig(fqn).get('pageSize',100)
+          MaxKeys: limit || getCollectionConfig(fqn).get('pageSize',100)
         };
 
         if(fqn.name.indexOf('/')!==-1) params.Delimiter = '/';
         if(startsWith) params.Prefix = fqn.name.indexOf('/')===-1 ? startsWith : `{fqn.name.substring(fqn.name.indexOf('/')+1}/${startsWith}`;
         if(continuationToken) params.ContinuationToken = continuationToken;
 
-        return s3.listObjectsV2(params).promise();
+        return s3.listObjectsV2(params).promise()
+          .then(results => Promise.resolve(results, limit))
+          .catch(err => Promise.reject(err));
       },
 
       /**
@@ -176,11 +178,11 @@ module.exports = function(config){
           ContentLength: Buffer.byteLength(request.body, 'utf8'),
           Body: request.body
         };
-        
+
         if(request.metadata){
           params.Metadata = cleanDocumentMetadata(request.metadata);
         }
-       
+
         if(getCollectionConfig(request.fqn).get('encryption',true)) params.ServerSideEncryption = 'AES256';
         return s3.putObject(params).promise().then( response => Object.assign(response,{Body:request.body,Metadata:params.Metadata}));
       },
